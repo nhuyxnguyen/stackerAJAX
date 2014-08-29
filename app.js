@@ -6,6 +6,12 @@ $(document).ready( function() {
 		var tags = $(this).find("input[name='tags']").val();
 		getUnanswered(tags);
 	});
+
+	$('.inspiration-getter').submit(function(event) {
+		$('.results').html('');
+		var answerers = $(this).find("input[name='answerers']").val();
+		getInspiration(answerers);
+	});
 });
 
 // this function takes the question object returned by StackOverflow 
@@ -37,6 +43,29 @@ var showQuestion = function(question) {
 							'</p>' +
  							'<p>Reputation: ' + question.owner.reputation + '</p>'
 	);
+
+	return result;
+};
+
+var showInspiration = function(answerer) {
+
+	var result = $('.templates .answerer').clone();
+
+	var answererElem = result.find('.user-name a');
+	answererElem.attr('href', answerer.user.link);
+	answererElem.text(answerer.user.display_name);
+	
+	var answererElemImg = result.find('.user-img img');
+	answererElemImg.attr('src', answerer.user.profile_image);
+
+	var reputation = result.find('.reputation');
+	reputation.text(answerer.user.reputation);
+
+	var postCount = result.find('.post-count');
+	postCount.text(answerer.post_count);
+
+	var score = result.find('.score');
+	score.text(answerer.score);
 
 	return result;
 };
@@ -88,5 +117,31 @@ var getUnanswered = function(tags) {
 	});
 };
 
+var getInspiration = function (tags) {
+	var request = {tagged: tags,
+								site: 'stackOverflow',
+								order: 'desc',
+								sort: 'creation'};
+	var inputTag = $('input[name="answerers"]').val();
+	var result = $.ajax({
+		url: 'http://api.stackexchange.com/2.2/tags/'+inputTag+'/top-answerers/all_time',
+		data: request,
+		dataType: 'jsonp',
+		type: 'GET',
+	})
+	.done(function (result) {
+		var searchResults = showSearchResults(request.tagged, result.items.length);
 
+		$('.search-results').html(searchResults);
+
+		$.each(result.items, function(i, item) {
+			var answerer = showInspiration(item);
+			$('.results').append(answerer);
+		});
+	})
+	.fail(function(jqXHR, error, errorThrown){
+		var errorElem = showError(error);
+		$('.search-results').append(errorElem);
+	});
+};
 
